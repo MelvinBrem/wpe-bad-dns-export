@@ -119,7 +119,7 @@ function get_domains_dns(array $installs): void
 
             $domainRecords = dns_get_record($domain['name'], DNS_A);
 
-            $ipsToIgnore = ['141.193.213.10', '141.193.213.11', '141.193.213.20', '141.193.213.21'];
+            $ipsToIgnore = ['141.193.213.20', '141.193.213.21'];
 
             if (!empty($domainRecords)) {
                 foreach ($domainRecords as $domainRecord) {
