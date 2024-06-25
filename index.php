@@ -13,42 +13,44 @@ if (file_exists('output/sites.php')) {
 $ch = curl_init();
 
 // Git installs
-if (empty($installs)) {
-    $installs = [];
+if (empty($_GET['justinstalls']) || empty($_GET['justinstalls']) && $_GET['justinstalls'] !== 'true') {
+    if (empty($installs)) {
+        $installs = [];
 
-    curl_setopt($ch, CURLOPT_URL, 'https://api.wpengineapi.com/v1/installs?limit=1000');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        curl_setopt($ch, CURLOPT_URL, 'https://api.wpengineapi.com/v1/installs?limit=1000');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
-    $headers = array();
-    $cred_string = '16f91498-4edb-434c-897d-93c2110d8e8d' . ":" . 'g4AfA4W5CjVzIrv1TAuG3lCYmz0dY44s';
-    $headers[] = "Authorization: Basic " . base64_encode($cred_string);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $headers = array();
+        $cred_string = '16f91498-4edb-434c-897d-93c2110d8e8d' . ":" . 'g4AfA4W5CjVzIrv1TAuG3lCYmz0dY44s';
+        $headers[] = "Authorization: Basic " . base64_encode($cred_string);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-    $result = curl_exec($ch);
-    if (curl_errno($ch)) {
-        echo 'Error:' . curl_error($ch);
+        $result = curl_exec($ch);
+        if (curl_errno($ch)) {
+            echo 'Error:' . curl_error($ch);
+        }
+
+        $data = json_decode($result, true);
+        foreach ($data['results'] as $result) {
+            if ($result['environment'] !== 'production') continue;
+
+            $installs[$result['name']] = [
+                'id' => $result['id']
+            ];
+        }
+
+        // Save output to minimize API calls
+        $installs_str = var_export($installs, true);
+        $var = "<?php\n\n\$installs = $installs_str;\n\n?>";
+        fopen('output/sites.php', 'w');
+        file_put_contents('output/sites.php', $var);
     }
-
-    $data = json_decode($result, true);
-    foreach ($data['results'] as $result) {
-        if ($result['environment'] !== 'production') continue;
-
-        $installs[$result['name']] = [
-            'id' => $result['id']
-        ];
-    }
-
-    // Save output to minimize API calls
-    $installs_str = var_export($installs, true);
-    $var = "<?php\n\n\$installs = $installs_str;\n\n?>";
-    fopen('output/sites.php', 'w');
-    file_put_contents('output/sites.php', $var);
 }
 
 
 // Git DNS records
-if (empty($_GET['justclean']) || empty($_GET['justclean']) && $_GET['justclean'] !== 'true') {
+if (empty($_GET['justdns']) || empty($_GET['justdns']) && $_GET['justdns'] !== 'true') {
     foreach ($installs as &$install) {
         curl_setopt($ch, CURLOPT_URL, 'https://api.wpengineapi.com/v1/installs/' . $install['id'] . '/domains');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -99,9 +101,11 @@ if (empty($_GET['justclean']) || empty($_GET['justclean']) && $_GET['justclean']
 }
 
 // Clean up empty/ installs with no DNS issues
-foreach ($installs as $key => $install) {
-    if (empty($install['domains'])) {
-        unset($installs[$key]);
+if (empty($_GET['justclean']) || empty($_GET['justclean']) && $_GET['justclean'] !== 'true') {
+    foreach ($installs as $key => $install) {
+        if (empty($install['domains'])) {
+            unset($installs[$key]);
+        }
     }
 }
 
@@ -109,18 +113,3 @@ $installs_str = var_export($installs, true);
 $var = "<?php\n\n\$installs = $installs_str;\n\n?>";
 fopen('output/sites_clean.php', 'w');
 file_put_contents('output/sites_clean.php', $var);
-
-// Convert to XML
-function array_to_xml(array $data, SimpleXMLElement $xml)
-{
-    foreach ($data as $name => $value) {
-        is_array($value)
-            ? array_to_xml($value, $xml->addChild($name))
-            : $xml->addChild($name, $value);
-    }
-
-    return $xml;
-}
-
-fopen('output/sites_clean.xml', 'w');
-file_put_contents('output/sites_clean.xml', array_to_xml($installs, new SimpleXMLElement('<root/>'))->asXML());
