@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use League\Csv\Writer;
+
 require_once 'vendor/autoload.php';
 
 if (file_exists('output/sites.php')) {
@@ -14,16 +16,25 @@ if (!empty($_GET['action'])) {
             get_installs();
             break;
         case 'getdns':
+            if (file_exists('output/sites.php')) {
+                require_once 'output/sites.php';
+            }
             if (!empty($installs)) {
                 get_dns($installs);
             }
             break;
         case 'clean':
+            if (file_exists('output/sites.php')) {
+                require_once 'output/sites.php';
+            }
             if (!empty($installs)) {
                 clean_installs($installs);
             }
             break;
         case 'tocsv':
+            if (file_exists('output/sites_clean.php')) {
+                require_once 'output/sites_clean.php';
+            }
             if (!empty($installs)) {
                 to_csv($installs);
             }
@@ -77,6 +88,8 @@ function get_installs(): array
 // Git DNS records
 function get_dns(array $installs): void
 {
+    if (empty($installs)) throw new Exception("No installs");
+
     $ch = curl_init();
 
     foreach ($installs as &$install) {
@@ -131,6 +144,8 @@ function get_dns(array $installs): void
 // Clean up empty/ installs with no DNS issues
 function clean_installs(array $installs): void
 {
+    if (empty($installs)) throw new Exception("No installs");
+
     if (empty($_GET['justclean']) || empty($_GET['justclean']) && $_GET['justclean'] !== 'true') {
         foreach ($installs as $key => $install) {
             if (empty($install['domains'])) {
@@ -148,9 +163,22 @@ function clean_installs(array $installs): void
 // Array to CSV, domain per row
 function to_csv(array $installs): void
 {
-    if (empty($_GET['justcsv']) || empty($_GET['justcsv']) && $_GET['justcsv'] !== 'true') {
-        foreach ($$installs as $install) {
-            dump($install['domains']);
+    if (empty($installs)) throw new Exception("No installs");
+
+    $header = ['install', 'domain', 'current_ip'];
+    $records = [];
+
+    $csv = Writer::createFromString();
+    $csv->insertOne($header);
+
+    foreach ($installs as $installname => $installData) {
+        foreach ($installData['domains'] as $domain => $ip) {
+            $records[] = [$installname, $domain, $ip];
         }
     }
+
+    $csv->insertAll($records);
+
+    fopen('output/sites_clean.csv', 'w');
+    file_put_contents('output/sites_clean.csv', $csv->toString());
 }
