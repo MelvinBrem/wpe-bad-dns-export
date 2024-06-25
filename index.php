@@ -108,6 +108,8 @@ function get_domains_dns(array $installs): void
         }
 
         $domainsResults = json_decode($result, true);
+        if (empty($domainsResults['results'])) continue;
+
         foreach ($domainsResults['results'] as $domain) {
             if (
                 str_contains($domain['name'], 'wpengine') ||
