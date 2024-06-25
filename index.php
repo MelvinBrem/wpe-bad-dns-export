@@ -15,12 +15,12 @@ if (!empty($_GET['action'])) {
         case 'getinstalls':
             get_installs();
             break;
-        case 'getdns':
+        case 'getdomainsdns':
             if (file_exists('output/sites.php')) {
                 require_once 'output/sites.php';
             }
             if (!empty($installs)) {
-                get_dns($installs);
+                get_domains_dns($installs);
             }
             break;
         case 'clean':
@@ -42,7 +42,7 @@ if (!empty($_GET['action'])) {
     }
 } else {
     $installs = get_installs();
-    get_dns($installs);
+    get_domains_dns($installs);
     clean_installs($installs);
     to_csv($installs);
 }
@@ -86,7 +86,7 @@ function get_installs(): array
 }
 
 // Git DNS records
-function get_dns(array $installs): void
+function get_domains_dns(array $installs): void
 {
     if (empty($installs)) throw new Exception("No installs");
 
@@ -107,10 +107,8 @@ function get_dns(array $installs): void
             echo 'Error:' . curl_error($ch);
         }
 
-        $domainRequest = json_decode($result, true);
-
-        foreach ($domainRequest['results'] as $domain) {
-
+        $domainsResults = json_decode($result, true);
+        foreach ($domainsResults['results'] as $domain) {
             if (
                 str_contains($domain['name'], 'wpengine') ||
                 in_array($domain['name'], ['wpengine.com', 'wpengine.net']) ||
