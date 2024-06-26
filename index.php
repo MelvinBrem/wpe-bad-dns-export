@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
+use Symfony\Component\Dotenv\Dotenv;
 use League\Csv\Writer;
 
 require_once 'vendor/autoload.php';
+
+$dotenv = new Dotenv();
+$dotenv->load(__DIR__ . '/.env');
 
 if (file_exists('output/sites.php')) {
     require_once 'output/sites.php';
@@ -58,7 +62,7 @@ function get_installs(): array
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
     $headers = array();
-    $cred_string = '16f91498-4edb-434c-897d-93c2110d8e8d' . ":" . 'g4AfA4W5CjVzIrv1TAuG3lCYmz0dY44s';
+    $cred_string = $_ENV['WPE_API_UN'] . ":" . $_ENV['WPE_API_PW'];
     $headers[] = "Authorization: Basic " . base64_encode($cred_string);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
@@ -78,9 +82,11 @@ function get_installs(): array
 
     // Save output to minimize API calls
     $installs_str = var_export($installs, true);
-    $var = "<?php\n\n\$installs = $installs_str;\n\n?>";
+    $var = "<?php" . PHP_EOL . "\$installs = $installs_str;" . PHP_EOL . "?>";
     fopen('output/sites.php', 'w');
     file_put_contents('output/sites.php', $var);
+
+    die();
 
     return $installs;
 }
@@ -135,7 +141,7 @@ function get_domains_dns(array $installs): void
         }
 
         $installs_str = var_export($installs, true);
-        $var = "<?php\n\n\$installs = $installs_str;\n\n?>";
+        $var = "<?php" . PHP_EOL . "\$installs = $installs_str;" . PHP_EOL . "?>";
         fopen('output/sites.php', 'w');
         file_put_contents('output/sites.php', $var);
     }
@@ -155,7 +161,7 @@ function clean_installs(array $installs): void
     }
 
     $installs_str = var_export($installs, true);
-    $var = "<?php\n\n\$installs = $installs_str;\n\n?>";
+    $var = "<?php" . PHP_EOL . "\$installs = $installs_str;" . PHP_EOL . "?>";
     fopen('output/sites_clean.php', 'w');
     file_put_contents('output/sites_clean.php', $var);
 }

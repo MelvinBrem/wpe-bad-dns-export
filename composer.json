@@ -1,5 +1,5 @@
 {
-    "name": "melvinbrem/wpedomainexport",
+    "name": "melvinbrem/wpe-bad-dns-export",
     "type": "project",
     "authors": [
         {
@@ -11,6 +11,7 @@
         "symfony/var-dumper": "^7.1"
     },
     "require": {
-        "league/csv": "^9.16.0"
+        "league/csv": "^9.16.0",
+        "symfony/dotenv": "^7.1"
     }
 }
