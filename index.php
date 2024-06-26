@@ -86,8 +86,6 @@ function get_installs(): array
     fopen('output/sites.php', 'w');
     file_put_contents('output/sites.php', $var);
 
-    die();
-
     return $installs;
 }
 
